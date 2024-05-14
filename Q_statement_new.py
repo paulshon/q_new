@@ -50,7 +50,7 @@ st.write("""
 """)
 
 # 이미지 추가
-image_path = "Q_sort_image/q_st.png"
+image_path = "q_st.png"
 st.image(image_path, caption="Q 분류표", use_column_width=True)
 
 st.write("""
