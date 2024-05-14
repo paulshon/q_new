@@ -1,49 +1,68 @@
 import streamlit as st
 import pandas as pd
 import os
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.base import MIMEBase
+from email import encoders
 
-# 설명문 추가
+st.title('Send Streamlit SMTP Email with Attachment 💌 🚀')
+
+st.markdown("""
+**Enter your email, subject, and email body then hit send to receive an email with an attachment!**
+""")
+
+# Taking inputs
+email_sender = st.text_input('From', 'your_email@gmail.com')
+email_receiver = st.text_input('To', 'sarangred@paran.com')
+subject = st.text_input('Subject')
+body = st.text_area('Body')
+
+# Hide the password input
+password = st.text_input('Password', type="password")
+
+# File upload
+uploaded_file = st.file_uploader("Upload Excel file", type=['xls', 'xlsx'])
+
+# 설문조사 입력 부분 추가
 st.write("""
 # 생성형 AI와 인간의 창작에 관한 설문조사
-아래의 표는 Q방법론(주관성연구)의   Q 표본 분류표입니다.   아래의 표를 보시면 -4는 "강한 비동의"를 나타내고, 4는 "강한 동의"를 의미합니다. 각 숫자에 해당하는 의견을 선택하여 설문에 참여해주세요. 예를 들어, -4를 선택하면 "강한 불동의", 0을 선택하면 "중립"을 의미합니다. 이러한 방식으로 당신의 의견을 선택해주세요. 
+아래의 표는 Q방법론(주관성연구)의 Q 표본 분류표입니다. 아래의 표를 보시면 -4는 "강한 비동의"를 나타내고, 4는 "강한 동의"를 의미합니다. 각 숫자에 해당하는 의견을 선택하여 설문에 참여해주세요. 예를 들어, -4를 선택하면 "강한 불동의", 0을 선택하면 "중립"을 의미합니다. 이러한 방식으로 당신의 의견을 선택해주세요.
 단, 여기에서 중요한 것은 아래의 칸처럼
 
 -4는 2번
 -3은 3번
 -2는 4번
 -1은 4번
- 0 은 5번
+0 은 5번
 +1은 4번
 +2는 4번
 +3은 3번
 +4는 2번
 
-으로  -4의 강한 비동의와  +4의 강한 동의 사이에 선택의 제한이 있습니다.  예를 들면 -4를 2번이상, -3을 3번 이상, -2를 4번이상 선택하시면 안됩니다
+으로 -4의 강한 비동의와 +4의 강한 동의 사이에 선택의 제한이 있습니다. 예를 들면 -4를 2번이상, -3을 3번 이상, -2를 4번이상 선택하시면 안됩니다
 
 예를 들면 아래의 진술문에서
 
-"AI 예술은 예술가와 함께 협력하여 예술의 다양성을 향상시킬 수 있다"에서
-+4를 선택했으면
+"AI 예술은 예술가와 함께 협력하여 예술의 다양성을 향상시킬 수 있다"에서 +4를 선택했으면
 
 다음 진술문에서 +4를 선택할 수 있는 것은 1번 남았다는 의미입니다
 
-또 다른 예를 들면 아래의 진술문에서
-"생성형 AI로 만든 예술 작품을 구매할 의향이 있다"에서
-0인 중립을 선택했으면 
-다음 진술문에서 0를 선택할 수 있는 것은 4번 남았다는 의미입니다.
+또 다른 예를 들면 아래의 진술문에서 "생성형 AI로 만든 예술 작품을 구매할 의향이 있다"에서 0인 중립을 선택했으면 다음 진술문에서 0를 선택할 수 있는 것은 4번 남았다는 의미입니다.
 
 진술문을 체크하실때마다 자동으로 강도의 수가 줄어들게 설정되어 있습니다.
 
 아래에서 각 진술문에 대한 응답을 선택하세요. 각 진술문은 다음과 같이 강도를 나타내는 체크박스로 표시됩니다:
 
 - (-4) 강한 비동의
-- (-3) 
-- (-2) 
-- (-1) 
+- (-3)
+- (-2)
+- (-1)
 - (0) 중립
-- (1) 
-- (2) 
-- (3) 
+- (1)
+- (2)
+- (3)
 - (4) 강한 동의
 
 각 응답은 엑셀 파일로 저장됩니다. 저장된위치는 C:/Users/Public/Documents/입니다.엑셀파일은 sarangred@paran.com으로 보내시면 됩니다.
@@ -88,7 +107,7 @@ statements = [
     "생성형 AI을 통한 예술 창작이 전통적인 예술가의 기법을 답습하는것은 상관없다",
     "생성형 AI를 활용하여 다양한 시각과 경험을 제공함으로써 학생들의 창의성을 증진시킬 수 있을 것으로 기대된다",
     "생성형 AI가 예술 교육에 미치는 영향은 신중히 고려되어야 하며, 인간 예술가의 역할과 가치를 지키는 데 중점을 둘 필요가 있다",
-    "생성형 AI와 인간 예술가의 창조 과정을 비교하고, 예술교육이  두 가지 접근 방식의 장단점을 이해시키는데 융합하는데 중점을 둘 필요가 있다",
+    "생성형 AI와 인간 예술가의 창조 과정을 비교하고, 예술교육이 두 가지 접근 방식의 장단점을 이해시키는데 융합하는데 중점을 둘 필요가 있다",
     "AI는 예술가의 창의성을 보완하고 새로운 예술 분야의 직업을 창출하는 데 기여할 것이다.",
     "생성형 AI는 아직 초기 단계이므로 인간의 예술에 미치는 영향은 미미하다",
     "AI가 생성한 이미지에 대한 소유권에 대한 시비는 작품 시장의 미래에 영향을 줄 수 있는 중요한 문제이다"
@@ -148,6 +167,39 @@ def main():
         excel_file_path = os.path.join(save_directory, "설문_결과.xlsx")
         df_responses.to_excel(excel_file_path, index=False)
         st.success(f"설문 결과가 성공적으로 저장되었습니다: {excel_file_path}")
+
+    # 이메일 보내기
+    if st.button("Send Email"):
+        try:
+            # Create a multipart message and set headers
+            msg = MIMEMultipart()
+            msg['From'] = email_sender
+            msg['To'] = email_receiver
+            msg['Subject'] = subject
+
+            # Add body to email
+            msg.attach(MIMEText(body, 'plain'))
+
+            if uploaded_file is not None:
+                # Attach file
+                part = MIMEBase('application', "octet-stream")
+                part.set_payload(uploaded_file.getvalue())
+                encoders.encode_base64(part)
+                part.add_header('Content-Disposition', f"attachment; filename= {uploaded_file.name}")
+                msg.attach(part)
+
+            # Convert message to string
+            text = msg.as_string()
+
+            # Log in to server and send email
+            with smtplib.SMTP('smtp.gmail.com', 587) as server:
+                server.starttls()
+                server.login(email_sender, password)
+                server.sendmail(email_sender, email_receiver, text)
+
+            st.success('Email sent successfully! 🚀')
+        except Exception as e:
+            st.error(f"Failed to send email: {e}")
 
 if __name__ == "__main__":
     main()
